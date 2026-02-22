@@ -90,19 +90,20 @@ def create_train_val_test_splits(source_dir, output_dir, val_split=0.1, test_spl
 
 def preprocess_dataset(data_dir):
     """
-    Legacy function for preprocessing - checks images are valid (idempotent)
+    Validate images in dataset and optionally resize to 224x224
     
     Args:
-        data_dir: Path to dataset directory
+        data_dir: Path to dataset directory (train/val/test/class structure)
     
     Returns:
         True if successful
     """
-    from PIL import ImageFile
+    from PIL import Image, ImageFile
     ImageFile.LOAD_TRUNCATED_IMAGES = True
     
     data_dir = Path(data_dir)
     valid_count = 0
+    removed_count = 0
     
     # Iterate through all splits and classes
     for split in ['train', 'val', 'test']:
@@ -110,23 +111,43 @@ def preprocess_dataset(data_dir):
         if not split_dir.exists():
             continue
         
-        for cls in os.listdir(split_dir):
-            cls_dir = split_dir / cls
+        for cls_dir in split_dir.iterdir():
             if not cls_dir.is_dir():
                 continue
             
-            for img_file in cls_dir.glob('*.jpg'):
+            # Find all image files (case-insensitive)
+            for img_file in list(cls_dir.iterdir()):
+                if not img_file.is_file() or img_file.suffix.lower() not in ['.jpg', '.jpeg', '.png']:
+                    continue
+                
                 try:
-                    # Try to open and get image size
-                    img = datasets.folder.ImageFolder.loader(str(img_file))
-                    # If successful, just count valid images (idempotent)
+                    # Try to open and load image
+                    img = Image.open(img_file)
+                    img.load()
+                    
+                    # Convert to RGB if needed
+                    if img.mode != 'RGB':
+                        img = img.convert('RGB')
+                    
+                    # Resize to 224x224
+                    img_resized = img.resize((224, 224), Image.Resampling.LANCZOS)
+                    img.close()
+                    
+                    # Save with good quality
+                    img_resized.save(str(img_file), 'JPEG', quality=95)
+                    
                     valid_count += 1
+                    
                 except Exception as e:
                     # Remove corrupt images
-                    print(f"[WARN] Removing corrupt image: {img_file}")
-                    img_file.unlink()
+                    print(f"[WARN] Removing corrupt image: {img_file}: {type(e).__name__}")
+                    try:
+                        img_file.unlink()
+                        removed_count += 1
+                    except:
+                        pass
     
-    print(f"[OK] Validation complete: {valid_count} valid images")
+    print(f"[OK] Validation: {valid_count} valid, {removed_count} removed")
     return True
 
 
@@ -144,12 +165,15 @@ def get_dataloaders(data_dir, batch_size=32, num_workers=0, splits_output=None,
         test_split: Test set fraction (used for split creation)
     
     Returns:
-        Dictionary with 'train', 'val', 'test' dataloaders, or tuple if split creation needed
+        Dictionary with 'train', 'val', 'test' dataloaders
     """
     data_dir = Path(data_dir)
     
-    # Check if this is PetImages folder (needs split creation)
+    # Check if this is PetImages folder (has Cat/Dog at root)
     is_petimages = (data_dir / 'Cat').exists() and (data_dir / 'Dog').exists()
+    
+    # Check if already split (has train/val/test at root)
+    is_presplit = (data_dir / 'train').exists() and (data_dir / 'val').exists() and (data_dir / 'test').exists()
     
     if is_petimages and splits_output:
         # Create splits if they don't exist
@@ -186,8 +210,15 @@ def get_dataloaders(data_dir, batch_size=32, num_workers=0, splits_output=None,
     for split in ['train', 'val', 'test']:
         split_path = data_dir / split
         
-        if not split_path.exists() or len(list(split_path.glob('*/*'))) == 0:
-            print(f"[WARN] Split {split} is empty or missing")
+        if not split_path.exists():
+            print(f"[WARN] Split directory {split_path} does not exist")
+            dataloaders[split] = None
+            continue
+        
+        # Check if there are any images in this split
+        images = list(split_path.glob('*/*.jpg')) + list(split_path.glob('*/*.png')) + list(split_path.glob('*/*.jpeg'))
+        if len(images) == 0:
+            print(f"[WARN] Split {split} has no images")
             dataloaders[split] = None
             continue
         
