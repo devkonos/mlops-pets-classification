@@ -21,6 +21,10 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy application code
 COPY src/ ./src/
 
+# Copy entrypoint script
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
 # Create necessary directories
 RUN mkdir -p ./models/artifacts ./data ./logs
 
@@ -28,8 +32,8 @@ RUN mkdir -p ./models/artifacts ./data ./logs
 EXPOSE 8000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Run API
-CMD ["python", "-m", "uvicorn", "src.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run API using entrypoint script
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
