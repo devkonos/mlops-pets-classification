@@ -111,7 +111,16 @@ def load_model():
 async def startup_event():
     """Initialize model on startup"""
     logger.info("Starting FastAPI application...")
-    load_model()
+    try:
+        load_model()
+        if model_loaded:
+            logger.info("Model loaded successfully")
+        else:
+            logger.warning("Model not loaded - will run in degraded mode")
+    except Exception as e:
+        logger.error(f"Error during startup: {e}", exc_info=True)
+        # Don't crash the app - continue with degraded mode
+        pass
 
 
 # Request/Response models
