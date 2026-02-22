@@ -129,7 +129,7 @@ jobs:
     
     - name: Run model training pipeline
       run: |
-        python src/models/train.py
+        python scripts/train_model.py
     
     - name: Archive model artifacts
       if: always()

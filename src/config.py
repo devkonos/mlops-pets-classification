@@ -6,6 +6,7 @@ from pathlib import Path
 
 # Project paths
 PROJECT_ROOT = Path(__file__).parent.parent.absolute()
+DATA_ROOT_PATH = PROJECT_ROOT / "data" / "PetImages"  # Main training data
 DATA_RAW_PATH = PROJECT_ROOT / "data" / "raw"
 DATA_PROCESSED_PATH = PROJECT_ROOT / "data" / "processed"
 DATA_SPLITS_PATH = PROJECT_ROOT / "data" / "splits"
@@ -14,7 +15,7 @@ LOGS_PATH = PROJECT_ROOT / "logs"
 ARTIFACTS_PATH = MODELS_PATH / "artifacts"
 
 # Create directories if they don't exist
-for path in [DATA_RAW_PATH, DATA_PROCESSED_PATH, DATA_SPLITS_PATH, 
+for path in [DATA_ROOT_PATH, DATA_RAW_PATH, DATA_PROCESSED_PATH, DATA_SPLITS_PATH, 
              MODELS_PATH, LOGS_PATH, ARTIFACTS_PATH]:
     path.mkdir(parents=True, exist_ok=True)
 

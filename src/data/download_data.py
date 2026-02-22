@@ -32,7 +32,6 @@ def download_cats_vs_dogs_data(output_dir: str = "data/raw") -> str:
     try:
         import kagglehub
     except ImportError:
-        print("[WARN] kagglehub library not installed.")
         print("[INFO] You can manually download the dataset from:")
         print("       https://www.kaggle.com/datasets/bhavikjikadara/dog-and-cat-classification-dataset")
         print("[INFO] Extract it to: data/raw/")
