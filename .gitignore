@@ -230,6 +230,14 @@ mlflow/
 *.pptx
 *.html
 
+# EXCEPT: Include training data images in PetImages/
+!data/PetImages/
+!data/PetImages/**
+!data/PetImages/**/*.jpg
+!data/PetImages/**/*.jpeg
+!data/PetImages/**/*.png
+!data/PetImages/**/*.gif
+
 # Assignment files (optional, if you want to exclude)
 *.pdf
 MLOPS_Assignment*.pdf
