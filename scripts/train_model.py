@@ -5,6 +5,8 @@ import os
 import sys
 import logging
 from pathlib import Path
+import torch
+import torch.nn as nn
 
 # Setup paths - ADD PROJECT ROOT (like REFERENCE does)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -53,11 +55,16 @@ def main():
         # Train model
         logger.info("Starting model training...")
         trainer.train(
-            data_dir='data/PetImages',
+            train_loader=dataloaders['train'],
+            val_loader=dataloaders['val'],
             num_epochs=MODEL_CONFIG['num_epochs'],
-            batch_size=MODEL_CONFIG['batch_size'],
-            learning_rate=MODEL_CONFIG['learning_rate']
+            early_stopping_patience=MODEL_CONFIG['early_stopping_patience']
         )
+        
+        # Evaluate on test set
+        logger.info("Evaluating on test set...")
+        if dataloaders['test'] is not None:
+            trainer.evaluate(dataloaders['test'], nn.CrossEntropyLoss())
         
         logger.info("=" * 70)
         logger.info("MODEL TRAINING COMPLETED SUCCESSFULLY")
