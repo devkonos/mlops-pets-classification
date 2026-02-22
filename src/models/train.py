@@ -109,9 +109,12 @@ class ModelTrainer:
         self.best_metrics = {}
         
         # Setup MLflow
-        mlflow.set_tracking_uri(MLFLOW_CONFIG['tracking_uri'])
-        mlflow.set_experiment(MLFLOW_CONFIG['experiment_name'])
-        logger.info(f"MLflow tracking URI: {MLFLOW_CONFIG['tracking_uri']}")
+        try:
+            mlflow.set_tracking_uri(MLFLOW_CONFIG['tracking_uri'])
+            mlflow.set_experiment(MLFLOW_CONFIG['experiment_name'])
+            logger.info(f"MLflow tracking URI: {MLFLOW_CONFIG['tracking_uri']}")
+        except Exception as e:
+            logger.warning(f"MLflow setup failed (tracking may be disabled): {e}")
     
     def build_model(self):
         """Build the model"""
@@ -207,15 +210,35 @@ class ModelTrainer:
         optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         scheduler = ReduceLROnPlateau(optimizer, 'min', patience=2, verbose=True)
         
-        # MLflow run
-        with mlflow.start_run():
+        # MLflow run (wrapped for resilience)
+        class SafeMlflowRun:
+            def __enter__(self):
+                try:
+                    self.run = mlflow.start_run()
+                    return self.run
+                except Exception as e:
+                    logger.warning(f"Could not start MLflow run: {e}")
+                    return None
+            
+            def __exit__(self, *args):
+                try:
+                    if self.run:
+                        mlflow.end_run()
+                except:
+                    pass
+        
+        with SafeMlflowRun() as run:
             # Log parameters
-            mlflow.log_param('model_name', self.model_name)
-            mlflow.log_param('num_epochs', num_epochs)
-            mlflow.log_param('batch_size', batch_size)
-            mlflow.log_param('learning_rate', learning_rate)
-            mlflow.log_param('device', self.device)
-            mlflow.log_param('environment', ENVIRONMENT)
+            if run:
+                try:
+                    mlflow.log_param('model_name', self.model_name)
+                    mlflow.log_param('num_epochs', num_epochs)
+                    mlflow.log_param('batch_size', batch_size)
+                    mlflow.log_param('learning_rate', learning_rate)
+                    mlflow.log_param('device', self.device)
+                    mlflow.log_param('environment', ENVIRONMENT)
+                except Exception as e:
+                    logger.warning(f"Could not log MLflow params: {e}")
             
             best_val_loss = float('inf')
             patience_counter = 0
@@ -232,16 +255,20 @@ class ModelTrainer:
                 # Validate
                 val_metrics = self.evaluate(dataloaders['val'], criterion)
                 
-                # Log metrics
-                mlflow.log_metrics({
-                    'train_loss': train_loss,
-                    'train_accuracy': train_acc,
-                    'val_loss': val_metrics['loss'],
-                    'val_accuracy': val_metrics['accuracy'],
-                    'val_precision': val_metrics['precision'],
-                    'val_recall': val_metrics['recall'],
-                    'val_f1': val_metrics['f1'],
-                }, step=epoch)
+                # Log metrics (safe)
+                try:
+                    if run:
+                        mlflow.log_metrics({
+                            'train_loss': train_loss,
+                            'train_accuracy': train_acc,
+                            'val_loss': val_metrics['loss'],
+                            'val_accuracy': val_metrics['accuracy'],
+                            'val_precision': val_metrics['precision'],
+                            'val_recall': val_metrics['recall'],
+                            'val_f1': val_metrics['f1'],
+                        }, step=epoch)
+                except Exception as e:
+                    logger.debug(f"Could not log MLflow metrics: {e}")
                 
                 logger.info(
                     f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f} | "
@@ -269,41 +296,50 @@ class ModelTrainer:
             logger.info("Evaluating on test set...")
             test_metrics = self.evaluate(dataloaders['test'], criterion)
             
-            mlflow.log_metrics({
-                'test_loss': test_metrics['loss'],
-                'test_accuracy': test_metrics['accuracy'],
-                'test_precision': test_metrics['precision'],
-                'test_recall': test_metrics['recall'],
-                'test_f1': test_metrics['f1'],
-            })
-            
-            # Log confusion matrix
-            cm = confusion_matrix(test_metrics['labels'], test_metrics['predictions'])
-            cm_dict = {
-                'confusion_matrix': cm.tolist(),
-                'labels': CLASS_NAMES,
-            }
-            mlflow.log_dict(cm_dict, 'confusion_matrix.json')
-            
-            # Log classification report
-            class_report = classification_report(
-                test_metrics['labels'],
-                test_metrics['predictions'],
-                target_names=CLASS_NAMES,
-                output_dict=True
-            )
-            mlflow.log_dict(class_report, 'classification_report.json')
+            # Log test metrics (safe)
+            try:
+                if run:
+                    mlflow.log_metrics({
+                        'test_loss': test_metrics['loss'],
+                        'test_accuracy': test_metrics['accuracy'],
+                        'test_precision': test_metrics['precision'],
+                        'test_recall': test_metrics['recall'],
+                        'test_f1': test_metrics['f1'],
+                    })
+                    
+                    # Log confusion matrix
+                    cm = confusion_matrix(test_metrics['labels'], test_metrics['predictions'])
+                    cm_dict = {
+                        'confusion_matrix': cm.tolist(),
+                        'labels': CLASS_NAMES,
+                    }
+                    mlflow.log_dict(cm_dict, 'confusion_matrix.json')
+                    
+                    # Log classification report
+                    class_report = classification_report(
+                        test_metrics['labels'],
+                        test_metrics['predictions'],
+                        target_names=CLASS_NAMES,
+                        output_dict=True
+                    )
+                    mlflow.log_dict(class_report, 'classification_report.json')
+            except Exception as e:
+                logger.debug(f"Could not log MLflow test metrics: {e}")
             
             logger.info(f"Test Accuracy: {test_metrics['accuracy']:.4f}")
             logger.info(f"Test F1 Score: {test_metrics['f1']:.4f}")
             
-            # Log model
-            mlflow.pytorch.log_model(
-                self.model, "model",
-                artifact_path=str(ARTIFACTS_PATH),
-            )
-            
-            logger.info(f"Model trained successfully. Run ID: {mlflow.active_run().info.run_id}")
+            # Log model (safe)
+            try:
+                if run:
+                    mlflow.pytorch.log_model(
+                        self.model, "model",
+                        artifact_path=str(ARTIFACTS_PATH)
+                    )
+                    logger.info(f"Model trained successfully. Run ID: {mlflow.active_run().info.run_id}")
+            except Exception as e:
+                logger.debug(f"Could not log MLflow model: {e}")
+                logger.info("Model trained successfully (MLflow logging skipped)")
 
 
 def main():

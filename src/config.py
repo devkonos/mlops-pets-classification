@@ -50,10 +50,11 @@ API_CONFIG = {
 }
 
 # MLflow configuration
+# Use file-based tracking by default (works in CI/CD and local without server)
 MLFLOW_CONFIG = {
-    'tracking_uri': os.getenv('MLFLOW_TRACKING_URI', 'http://localhost:5000'),
+    'tracking_uri': os.getenv('MLFLOW_TRACKING_URI', f'file:{PROJECT_ROOT / "mlruns"}'),
     'experiment_name': os.getenv('MLFLOW_EXPERIMENT', 'cats_vs_dogs'),
-    'backend_store_uri': os.getenv('MLFLOW_BACKEND_STORE_URI', 'file:mlruns'),
+    'backend_store_uri': os.getenv('MLFLOW_BACKEND_STORE_URI', f'file:{PROJECT_ROOT / "mlruns"}'),
     'default_artifact_root': os.getenv('MLFLOW_ARTIFACT_ROOT', str(ARTIFACTS_PATH)),
 }
 
