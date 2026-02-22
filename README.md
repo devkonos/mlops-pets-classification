@@ -443,33 +443,7 @@ Expected performance:
 - **API throughput**: 50-100 requests/sec
 - **Container startup**: 5-10 seconds
 
-## Next Steps
-
-1. Download data and train model
-2. Verify API works locally
-3. Run full test suite
-4. Deploy to Kubernetes cluster
-5. Monitor with Prometheus/Grafana
-6. Setup CI/CD on GitHub
-
-## Implementation Status
-
-- [x] M1: Model Development & Experiment Tracking (10/10)
-- [x] M2: Model Packaging & Containerization (10/10)
-- [x] M3: CI Pipeline (10/10)
-- [x] M4: CD Pipeline & Deployment (10/10)
-- [x] M5: Monitoring & Logging (10/10)
-
-**Total: 50/50 points**
 
 ## License
 
-Educational project for BITS MTECH MLOps Assignment 2
-
-## Support
-
-For detailed information about specific components, refer to the source code comments and docstrings in:
-- `src/models/train.py` - Model training details
-- `src/api/app.py` - API endpoints documentation
-- `src/monitoring.py` - Logging and metrics implementation
-- `.github/workflows/` - CI/CD pipeline logic
+BITS MTECH MLOps Assignment 2
