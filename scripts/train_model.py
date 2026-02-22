@@ -47,8 +47,6 @@ def main():
         logger.info(f"Initializing model trainer with: {MODEL_CONFIG}")
         trainer = ModelTrainer(
             model_name='simple_cnn',
-            num_classes=MODEL_CONFIG['num_classes'],
-            learning_rate=MODEL_CONFIG['learning_rate'],
             device='cpu'  # GitHub Actions uses CPU
         )
         
