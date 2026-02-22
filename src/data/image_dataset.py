@@ -88,33 +88,81 @@ def create_train_val_test_splits(source_dir, output_dir, val_split=0.1, test_spl
     return str(output_dir)
 
 
-def get_dataloaders(data_dir='data/PetImages', batch_size=32, num_workers=0, 
-                    splits_output='data/splits', val_split=0.1, test_split=0.1):
+def preprocess_dataset(data_dir):
     """
-    Create train/val/test dataloaders from PetImages folder
+    Legacy function for preprocessing - checks images are valid (idempotent)
     
     Args:
-        data_dir: Path to PetImages folder (contains Cat/ and Dog/ subfolders)
-        batch_size: Batch size for dataloaders
-        num_workers: Number of workers (0 for CPU on Windows/GitHub)
-        splits_output: Where to save the splits
-        val_split: Validation set fraction
-        test_split: Test set fraction
+        data_dir: Path to dataset directory
     
     Returns:
-        Tuple of (train_loader, val_loader, test_loader)
+        True if successful
     """
+    from PIL import ImageFile
+    ImageFile.LOAD_TRUNCATED_IMAGES = True
     
-    # Create splits if they don't exist
-    splits_dir = Path(splits_output)
-    if not splits_dir.exists() or len(list((splits_dir / 'train').glob('*/*'))) == 0:
-        print(f"Creating train/val/test splits from {data_dir}...")
-        create_train_val_test_splits(
-            source_dir=data_dir,
-            output_dir=splits_output,
-            val_split=val_split,
-            test_split=test_split
-        )
+    data_dir = Path(data_dir)
+    valid_count = 0
+    
+    # Iterate through all splits and classes
+    for split in ['train', 'val', 'test']:
+        split_dir = data_dir / split
+        if not split_dir.exists():
+            continue
+        
+        for cls in os.listdir(split_dir):
+            cls_dir = split_dir / cls
+            if not cls_dir.is_dir():
+                continue
+            
+            for img_file in cls_dir.glob('*.jpg'):
+                try:
+                    # Try to open and get image size
+                    img = datasets.folder.ImageFolder.loader(str(img_file))
+                    # If successful, just count valid images (idempotent)
+                    valid_count += 1
+                except Exception as e:
+                    # Remove corrupt images
+                    print(f"[WARN] Removing corrupt image: {img_file}")
+                    img_file.unlink()
+    
+    print(f"[OK] Validation complete: {valid_count} valid images")
+    return True
+
+
+def get_dataloaders(data_dir, batch_size=32, num_workers=0, splits_output=None, 
+                    val_split=0.1, test_split=0.1):
+    """
+    Create train/val/test dataloaders from dataset folder
+    
+    Args:
+        data_dir: Path to dataset or PetImages folder
+        batch_size: Batch size for dataloaders
+        num_workers: Number of workers (0 for CPU on Windows/GitHub)
+        splits_output: Optional path where to save splits (for PetImages)
+        val_split: Validation set fraction (used for split creation)
+        test_split: Test set fraction (used for split creation)
+    
+    Returns:
+        Dictionary with 'train', 'val', 'test' dataloaders, or tuple if split creation needed
+    """
+    data_dir = Path(data_dir)
+    
+    # Check if this is PetImages folder (needs split creation)
+    is_petimages = (data_dir / 'Cat').exists() and (data_dir / 'Dog').exists()
+    
+    if is_petimages and splits_output:
+        # Create splits if they don't exist
+        splits_dir = Path(splits_output)
+        if not splits_dir.exists() or len(list((splits_dir / 'train').glob('*/*'))) == 0:
+            print(f"Creating train/val/test splits from {data_dir}...")
+            create_train_val_test_splits(
+                source_dir=str(data_dir),
+                output_dir=splits_output,
+                val_split=val_split,
+                test_split=test_split
+            )
+        data_dir = splits_dir
     
     # Define transforms
     train_transform = transforms.Compose([
@@ -136,10 +184,11 @@ def get_dataloaders(data_dir='data/PetImages', batch_size=32, num_workers=0,
     # Create dataloaders
     dataloaders = {}
     for split in ['train', 'val', 'test']:
-        split_path = splits_dir / split
+        split_path = data_dir / split
         
         if not split_path.exists() or len(list(split_path.glob('*/*'))) == 0:
-            print(f"[WARN] Split {split} is empty")
+            print(f"[WARN] Split {split} is empty or missing")
+            dataloaders[split] = None
             continue
         
         transform = train_transform if split == 'train' else eval_transform
@@ -154,4 +203,4 @@ def get_dataloaders(data_dir='data/PetImages', batch_size=32, num_workers=0,
         )
         print(f"[OK] {split} dataloader: {len(dataset)} images, {len(dataloaders[split])} batches")
     
-    return dataloaders['train'], dataloaders['val'], dataloaders['test']
+    return dataloaders

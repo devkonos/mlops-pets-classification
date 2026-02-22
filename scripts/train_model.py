@@ -37,9 +37,10 @@ def main():
         
         # Get dataloaders
         logger.info(f"Loading data from data/PetImages/")
-        train_loader, val_loader, test_loader = get_dataloaders(
+        dataloaders = get_dataloaders(
             data_dir='data/PetImages',
-            batch_size=MODEL_CONFIG['batch_size']
+            batch_size=MODEL_CONFIG['batch_size'],
+            splits_output='data/splits'
         )
         
         # Initialize trainer
@@ -54,15 +55,11 @@ def main():
         # Train model
         logger.info("Starting model training...")
         trainer.train(
-            train_loader=train_loader,
-            val_loader=val_loader,
+            data_dir='data/PetImages',
             num_epochs=MODEL_CONFIG['num_epochs'],
-            early_stopping_patience=MODEL_CONFIG['early_stopping_patience']
+            batch_size=MODEL_CONFIG['batch_size'],
+            learning_rate=MODEL_CONFIG['learning_rate']
         )
-        
-        # Evaluate on test set
-        logger.info("Evaluating on test set...")
-        trainer.evaluate(test_loader)
         
         logger.info("=" * 70)
         logger.info("MODEL TRAINING COMPLETED SUCCESSFULLY")
