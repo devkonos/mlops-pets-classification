@@ -1,5 +1,6 @@
 """
 Data download script for Cats vs Dogs dataset (Assignment 2).
+Note: Kaggle API is optional. If not available, data can be manually placed in data/raw/
 """
 
 import os
@@ -9,11 +10,15 @@ from pathlib import Path
 def download_cats_vs_dogs_data(output_dir: str = "data/raw") -> str:
     """
     Download the Cats vs Dogs classification dataset from Kaggle using kagglehub.
+    
+    This is OPTIONAL - if kagglehub is not installed, you can manually download the dataset
+    from: https://www.kaggle.com/datasets/bhavikjikadara/dog-and-cat-classification-dataset
+    and extract it to the data/raw/ directory.
 
     Dataset:
         https://www.kaggle.com/datasets/bhavikjikadara/dog-and-cat-classification-dataset
 
-    Requirements (one-time Kaggle API setup):
+    Optional: Kaggle API Setup (one-time):
         1. Go to https://www.kaggle.com/settings/account
         2. Click "Create New API Token" (downloads kaggle.json)
         3. Place kaggle.json in the ~/.kaggle/ directory
@@ -27,7 +32,11 @@ def download_cats_vs_dogs_data(output_dir: str = "data/raw") -> str:
     try:
         import kagglehub
     except ImportError:
-        print("ERROR: kagglehub library not installed. Install with: pip install kagglehub")
+        print("[WARN] kagglehub library not installed.")
+        print("[INFO] You can manually download the dataset from:")
+        print("       https://www.kaggle.com/datasets/bhavikjikadara/dog-and-cat-classification-dataset")
+        print("[INFO] Extract it to: data/raw/")
+        print("[INFO] Or install kagglehub with: pip install kagglehub")
         return None
 
     Path(output_dir).mkdir(parents=True, exist_ok=True)
@@ -37,12 +46,12 @@ def download_cats_vs_dogs_data(output_dir: str = "data/raw") -> str:
         dataset_path = kagglehub.dataset_download(
             "bhavikjikadara/dog-and-cat-classification-dataset"
         )
-        print("Dataset downloaded successfully!")
-        print(f"Dataset path: {dataset_path}")
+        print("[OK] Dataset downloaded successfully!")
+        print(f"[OK] Dataset path: {dataset_path}")
         return dataset_path
     except Exception as e:
-        print(f"ERROR: Failed to download dataset: {e}")
-        print("Please ensure Kaggle API credentials are set up (see docstring).")
+        print(f"[FAIL] Failed to download dataset: {e}")
+        print("[INFO] Please ensure Kaggle API credentials are set up (see docstring).")
         return None
 
 

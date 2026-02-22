@@ -20,11 +20,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copy application code
 COPY src/ ./src/
-COPY models/ ./models/
-COPY data/ ./data/
 
-# Create logs directory
-RUN mkdir -p ./logs
+# Create necessary directories
+RUN mkdir -p ./models/artifacts ./data ./logs
 
 # Expose port
 EXPOSE 8000

@@ -234,8 +234,6 @@ mlflow/
 *.pdf
 MLOPS_Assignment*.pdf
 tree_output
+
 # Repository specific exclusions
 REFERENCE/
-data/raw/
-data/processed/
-data/splits/
