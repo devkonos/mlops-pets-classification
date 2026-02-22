@@ -14,6 +14,8 @@ mlflow>=2.7.1,<=2.9.0
 dvc>=3.20.0,<=3.44.1
 
 # PyTorch extras
+torch==2.1.0
+torchvision==0.16.0
 tqdm==4.65.0
 
 # Serving M2
