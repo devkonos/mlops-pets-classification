@@ -30,10 +30,17 @@ python -c "from src.api.app import app; print('[OK] App imported successfully')"
     exit 1
 }
 
-# Start the API with error handling
+# Start the API with error handling and logging
 echo "[STARTUP] Starting uvicorn server..."
-python -m uvicorn src.api.app:app --host 0.0.0.0 --port 8000 --log-level info
+python -m uvicorn src.api.app:app \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --log-level info \
+    --access-log \
+    2>&1 | tee /tmp/api.log
 
 # If we get here, something went wrong
 echo "[ERROR] API exited unexpectedly"
+echo "[ERROR] Last 50 lines of log:"
+tail -50 /tmp/api.log || true
 exit 1

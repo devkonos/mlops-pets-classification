@@ -100,14 +100,26 @@ jobs:
     - name: Test Docker container
       run: |
         docker run --rm -d -p 8000:8000 --name test-container ghcr.io/${{ github.repository }}:latest
-        sleep 5
-        if docker exec test-container curl -f http://localhost:8000/health; then
+        sleep 8
+        
+        # Check if container is still running
+        if ! docker ps | grep -q test-container; then
+          echo "[ERROR] Container exited immediately!"
+          docker logs test-container || true
+          exit 1
+        fi
+        
+        # Try health check with wget (built into slim image) or curl
+        if docker exec test-container wget -q -O- http://localhost:8000/health >/dev/null 2>&1 || \
+           docker exec test-container curl -f http://localhost:8000/health >/dev/null 2>&1; then
           echo "[OK] Health check passed"
         else
           echo "[FAIL] Health check failed"
+          echo "[DEBUG] Container logs:"
+          docker logs test-container || true
           exit 1
         fi
-        docker stop test-container
+        docker stop test-container || true
   
   model-training:
     runs-on: ubuntu-latest

@@ -30,13 +30,17 @@ from src.models.train import SimpleConvNet, get_transfer_learning_model
 from src.data.image_dataset import preprocess_dataset
 
 # Configure logging
+_handlers = [logging.StreamHandler()]
+try:
+    _handlers.append(logging.FileHandler(LOGGING_CONFIG['log_file']))
+except Exception as e:
+    # If we can't create file handler, just use console
+    print(f"[WARN] Could not create file handler: {e}")
+    
 logging.basicConfig(
     level=LOGGING_CONFIG['level'],
     format=LOGGING_CONFIG['format'],
-    handlers=[
-        logging.FileHandler(LOGGING_CONFIG['log_file']),
-        logging.StreamHandler()
-    ]
+    handlers=_handlers
 )
 logger = logging.getLogger(__name__)
 

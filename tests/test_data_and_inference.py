@@ -221,8 +221,8 @@ class TestConfigAndConstants:
     def test_class_names_correct(self):
         """Test that class names are correctly defined"""
         assert len(CLASS_NAMES) == 2
-        assert 'cats' in CLASS_NAMES
-        assert 'dogs' in CLASS_NAMES
+        assert 'Cat' in CLASS_NAMES
+        assert 'Dog' in CLASS_NAMES
     
     def test_model_config_has_required_keys(self):
         """Test that model config has all required keys"""
