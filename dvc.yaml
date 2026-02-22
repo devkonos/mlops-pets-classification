@@ -1,0 +1,38 @@
+# DVC configuration for data versioning
+# Generated for Cats vs Dogs MLOps pipeline
+
+stages:
+  download_data:
+    cmd: python -m src.data.download_data
+    deps:
+      - src/data/download_data.py
+    outs:
+      - data/raw:
+          cache: false
+
+  preprocess:
+    cmd: python -c "from src.data.image_dataset import preprocess_dataset; preprocess_dataset('data/raw')"
+    deps:
+      - data/raw
+      - src/data/image_dataset.py
+    outs:
+      - data/processed
+
+  prepare_splits:
+    cmd: python -c "from src.data.image_dataset import get_dataloaders; get_dataloaders('data/splits')"
+    deps:
+      - data/processed
+    outs:
+      - data/splits
+
+  train_model:
+    cmd: python src/models/train.py --data-dir data/splits --model simple_cnn --epochs 20
+    deps:
+      - data/splits
+      - src/models/train.py
+      - src/data/image_dataset.py
+    outs:
+      - models/artifacts/simple_cnn_best.pt
+    metrics:
+      - mlruns:
+          cache: false
