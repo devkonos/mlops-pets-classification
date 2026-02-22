@@ -5,8 +5,6 @@ import os
 import sys
 import logging
 from pathlib import Path
-import torch
-import torch.nn as nn
 
 # Setup paths - ADD PROJECT ROOT (like REFERENCE does)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -16,7 +14,6 @@ from src.config import (
     LOGGING_CONFIG, CLASS_NAMES
 )
 from src.models.train import ModelTrainer
-from src.data.image_dataset import get_dataloaders
 
 # Configure logging
 logging.basicConfig(
@@ -37,14 +34,6 @@ def main():
         logger.info("STARTING MODEL TRAINING PIPELINE - CATS VS DOGS")
         logger.info("=" * 70)
         
-        # Get dataloaders
-        logger.info(f"Loading data from data/PetImages/")
-        dataloaders = get_dataloaders(
-            data_dir='data/PetImages',
-            batch_size=MODEL_CONFIG['batch_size'],
-            splits_output='data/splits'
-        )
-        
         # Initialize trainer
         logger.info(f"Initializing model trainer with: {MODEL_CONFIG}")
         trainer = ModelTrainer(
@@ -55,16 +44,11 @@ def main():
         # Train model
         logger.info("Starting model training...")
         trainer.train(
-            train_loader=dataloaders['train'],
-            val_loader=dataloaders['val'],
+            data_dir='data/PetImages',
             num_epochs=MODEL_CONFIG['num_epochs'],
-            early_stopping_patience=MODEL_CONFIG['early_stopping_patience']
+            batch_size=MODEL_CONFIG['batch_size'],
+            learning_rate=MODEL_CONFIG['learning_rate']
         )
-        
-        # Evaluate on test set
-        logger.info("Evaluating on test set...")
-        if dataloaders['test'] is not None:
-            trainer.evaluate(dataloaders['test'], nn.CrossEntropyLoss())
         
         logger.info("=" * 70)
         logger.info("MODEL TRAINING COMPLETED SUCCESSFULLY")

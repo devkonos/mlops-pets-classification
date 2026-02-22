@@ -200,7 +200,18 @@ class ModelTrainer:
         
         # Load data
         logger.info(f"Loading data from {data_dir}")
-        dataloaders = get_dataloaders(data_dir, batch_size=batch_size)
+        # Check if this is PetImages folder that needs splitting
+        data_path = Path(data_dir)
+        if (data_path / 'Cat').exists() and (data_path / 'Dog').exists():
+            # PetImages folder - create splits
+            dataloaders = get_dataloaders(
+                data_dir, 
+                batch_size=batch_size,
+                splits_output='data/splits'
+            )
+        else:
+            # Already split folders
+            dataloaders = get_dataloaders(data_dir, batch_size=batch_size)
         
         # Build model
         self.build_model()
