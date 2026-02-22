@@ -26,7 +26,7 @@ MODEL_CONFIG = {
     'input_size': 224,
     'batch_size': 64,
     'num_epochs': 5,
-    'learning_rate': 0.005,
+    'learning_rate': 0.001,
     'early_stopping_patience': 3,
     'test_size': 0.1,
     'val_size': 0.1,
